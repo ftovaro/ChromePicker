@@ -32,6 +32,24 @@ Open the ChromePicker menu bar icon and:
 
 If your menu bar is crowded and the icon is hidden behind the notch, open ChromePicker again from Spotlight while it's running and the same menu appears at your mouse.
 
+## Troubleshooting
+
+### "No Chrome profiles found … you don't have permission to view it"
+
+On some Macs, macOS privacy protection blocks reading Chrome's data folder (even from Terminal: `Operation not permitted`). Give ChromePicker Full Disk Access:
+
+1. **System Settings → Privacy & Security → Full Disk Access → +**
+2. Press **⌘⇧G** and enter `~/Applications/ChromePicker.app` (it's installed in your home folder's Applications, not `/Applications`)
+3. Make sure it's toggled on, then quit ChromePicker from its menu and open it again
+
+Shortcut to open the Full Disk Access pane next to the app's folder:
+
+```bash
+open ~/Applications; open "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+```
+
+The build is signed ad-hoc, so rebuilding may reset this permission. If profiles disappear after `./build.sh`, remove ChromePicker from the list and add it again.
+
 ## Menu bar options
 
 - **Pause Picker** — links go straight to Chrome's last used profile, no picker
