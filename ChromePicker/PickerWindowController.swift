@@ -58,6 +58,7 @@ final class PickerWindowController: NSWindowController, NSWindowDelegate {
         hostingView.rootView = AnyView(PickerView(
             url: url,
             profiles: profiles,
+            loadError: ChromeProfileReader.loadError,
             selection: selection,
             onSelect: { [weak self] index in self?.select(index) }
         ))
@@ -76,9 +77,15 @@ final class PickerWindowController: NSWindowController, NSWindowDelegate {
         dismiss()
     }
 
+    /// With no profiles available, any selection falls back to Chrome's last used profile.
     private func select(_ index: Int) {
-        guard let url, profiles.indices.contains(index) else { return }
-        ChromeProfileReader.open(url, in: profiles[index])
+        guard let url else { return }
+        if profiles.isEmpty {
+            ChromeProfileReader.open(url, in: nil)
+        } else {
+            guard profiles.indices.contains(index) else { return }
+            ChromeProfileReader.open(url, in: profiles[index])
+        }
         dismiss()
     }
 
@@ -120,6 +127,7 @@ final class PickerWindowController: NSWindowController, NSWindowDelegate {
 private struct PickerView: View {
     let url: URL
     let profiles: [ChromeProfile]
+    let loadError: String?
     @ObservedObject var selection: PickerSelection
     let onSelect: (Int) -> Void
 
@@ -142,10 +150,27 @@ private struct PickerView: View {
             .padding(.top, 4)
 
             if profiles.isEmpty {
-                Text("No Chrome profiles found.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .padding(8)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("No Chrome profiles found")
+                        .font(.system(size: 12, weight: .medium))
+                    if let loadError {
+                        Text(loadError)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.horizontal, 8)
+
+                Text("Open in Chrome  ↩")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .contentShape(Rectangle())
+                    .onTapGesture { onSelect(0) }
             }
 
             VStack(spacing: 2) {

@@ -20,6 +20,7 @@ enum ChromeProfileReader {
 
     private static var cachedProfiles: [ChromeProfile] = []
     private static var cachedModificationDate: Date?
+    private(set) static var loadError: String?
 
     static func profiles() -> [ChromeProfile] {
         let modified = try? localStateURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
@@ -53,12 +54,21 @@ enum ChromeProfileReader {
     }
 
     private static func readProfiles() -> [ChromeProfile] {
-        guard let data = try? Data(contentsOf: localStateURL),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let profileSection = json["profile"] as? [String: Any],
-              let infoCache = profileSection["info_cache"] as? [String: [String: Any]] else {
+        let data: Data
+        do {
+            data = try Data(contentsOf: localStateURL)
+        } catch {
+            loadError = "Can't read \(localStateURL.path): \(error.localizedDescription)"
             return []
         }
+
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let profileSection = json["profile"] as? [String: Any],
+              let infoCache = profileSection["info_cache"] as? [String: [String: Any]] else {
+            loadError = "Unexpected format in \(localStateURL.path)"
+            return []
+        }
+        loadError = nil
 
         let order = (profileSection["profiles_order"] as? [String] ?? []).filter { infoCache[$0] != nil }
         let unordered = infoCache.keys.filter { !order.contains($0) }.sorted()
